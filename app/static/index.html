@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Pulse — Fast & Intelligent Web Page Auditor</title>
+  <meta name="description" content="Audit any URL for HTTP status, response speed, page titles, meta descriptions, missing alt text, and word counts.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-cyan: #38bdf8;
+      --accent-indigo: #818cf8;
+      --accent-emerald: #34d399;
+      --accent-rose: #f43f5e;
+      --accent-amber: #fbbf24;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2rem 1.5rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: var(--accent-cyan);
+      padding: 0.35rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--accent-cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-cyan);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+    }
+
+    h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      background: linear-gradient(to right, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.75rem;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      font-weight: 400;
+    }
+
+    /* Form Card */
+    .audit-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      margin-bottom: 2rem;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .input-wrapper {
+      position: relative;
+      flex: 1;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      color: var(--text-main);
+      font-size: 1rem;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    input[type="text"]::placeholder {
+      color: #64748b;
+    }
+
+    button {
+      background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 0 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.6);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Loading State */
+    .loading-state {
+      display: none;
+      text-align: center;
+      padding: 3rem 1rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(16px);
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(56, 189, 248, 0.2);
+      border-top-color: var(--accent-cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1.25rem auto;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: var(--text-main);
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .loading-subtext {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 0.35rem;
+    }
+
+    /* Error Banner */
+    .error-card {
+      display: none;
+      background: rgba(244, 63, 94, 0.1);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.5rem;
+      color: #fecdd3;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .error-title {
+      font-weight: 700;
+      color: var(--accent-rose);
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Results Section */
+    .results-container {
+      display: none;
+    }
+
+    .report-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .audited-url {
+      font-size: 0.95rem;
+      color: var(--accent-cyan);
+      word-break: break-all;
+      font-family: monospace;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .metric-card {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+    }
+
+    .metric-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .metric-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .badge-success { background: rgba(52, 211, 153, 0.15); color: var(--accent-emerald); border: 1px solid rgba(52, 211, 153, 0.3); }
+    .badge-warning { background: rgba(251, 191, 36, 0.15); color: var(--accent-amber); border: 1px solid rgba(251, 191, 36, 0.3); }
+    .badge-danger { background: rgba(244, 63, 94, 0.15); color: var(--accent-rose); border: 1px solid rgba(244, 63, 94, 0.3); }
+
+    /* Content details */
+    .content-detail-card {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .content-detail-title {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.5rem;
+    }
+
+    .content-detail-body {
+      font-size: 1rem;
+      color: var(--text-main);
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .empty-state {
+      color: #64748b;
+      font-style: italic;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    footer a:hover {
+      color: #7dd3fc;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 640px) {
+      .input-group {
+        flex-direction: column;
+      }
+      button {
+        padding: 1rem;
+      }
+      h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="logo-badge">
+        <span class="pulse-dot"></span>
+        SEO & Quality Auditor
+      </div>
+      <h1>Page Pulse</h1>
+      <p class="subtitle">Instant web page diagnostic metrics & content structure audit</p>
+    </header>
+
+    <main>
+      <!-- Audit Form Card -->
+      <div class="audit-card">
+        <form id="auditForm" onsubmit="handleAudit(event)">
+          <div class="input-group">
+            <div class="input-wrapper">
+              <input 
+                type="text" 
+                id="urlInput" 
+                placeholder="Enter URL (e.g. example.com or https://google.com)" 
+                required
+                autocomplete="off"
+              />
+            </div>
+            <button type="submit" id="submitBtn">
+              <span>Audit</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Inline Error Banner -->
+        <div id="errorCard" class="error-card">
+          <div class="error-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            Audit Failed
+          </div>
+          <div id="errorMessage">An unexpected error occurred.</div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingState" class="loading-state">
+        <div class="spinner"></div>
+        <div class="loading-text">Auditing web page...</div>
+        <div class="loading-subtext">Fetching URL, evaluating HTTP headers, and parsing content structure</div>
+      </div>
+
+      <!-- Results Display Card -->
+      <div id="resultsContainer" class="results-container audit-card">
+        <div class="report-header">
+          <div>
+            <div class="metric-label">Audited Target</div>
+            <div id="reportUrl" class="audited-url">https://example.com</div>
+          </div>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">HTTP Status</div>
+            <div class="metric-value" id="httpStatusVal">-</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Response Time</div>
+            <div class="metric-value" id="responseTimeVal">-</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">H1 Tag Count</div>
+            <div class="metric-value" id="h1CountVal">-</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Total Images</div>
+            <div class="metric-value" id="imagesTotalVal">-</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Images Missing Alt</div>
+            <div class="metric-value" id="missingAltVal">-</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Approx. Word Count</div>
+            <div class="metric-value" id="wordCountVal">-</div>
+          </div>
+        </div>
+
+        <div class="content-detail-card">
+          <div class="content-detail-title">Page Title</div>
+          <div class="content-detail-body" id="titleVal">None</div>
+        </div>
+
+        <div class="content-detail-card">
+          <div class="content-detail-title">Meta Description</div>
+          <div class="content-detail-body" id="metaDescVal">None</div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      Built for Digital Heroes Training Task &bull; <a href="https://digitalheroesco.com" target="_blank" rel="noopener noreferrer">digitalheroesco.com</a>
+    </footer>
+  </div>
+
+  <script>
+    async function handleAudit(event) {
+      event.preventDefault();
+      
+      const urlInput = document.getElementById('urlInput').value.trim();
+      const submitBtn = document.getElementById('submitBtn');
+      const errorCard = document.getElementById('errorCard');
+      const errorMessage = document.getElementById('errorMessage');
+      const loadingState = document.getElementById('loadingState');
+      const resultsContainer = document.getElementById('resultsContainer');
+
+      // Reset state
+      errorCard.style.display = 'none';
+      resultsContainer.style.display = 'none';
+      loadingState.style.display = 'block';
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch('/api/audit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ url: urlInput })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || `Server responded with HTTP status ${response.status}`);
+        }
+
+        // Render report data cleanly
+        document.getElementById('reportUrl').textContent = data.url || urlInput;
+        
+        // Status Badge formatting
+        const statusEl = document.getElementById('httpStatusVal');
+        const statusCode = data.http_status;
+        let badgeClass = 'badge-success';
+        if (statusCode >= 400) badgeClass = 'badge-danger';
+        else if (statusCode >= 300) badgeClass = 'badge-warning';
+        statusEl.innerHTML = `<span class="status-badge ${badgeClass}">${statusCode}</span>`;
+
+        document.getElementById('responseTimeVal').textContent = `${data.response_time_ms} ms`;
+        document.getElementById('h1CountVal').textContent = data.h1_count !== null ? data.h1_count : '0';
+        document.getElementById('imagesTotalVal').textContent = data.images_total !== null ? data.images_total : '0';
+        
+        // Highlight missing alt text with alert color if > 0
+        const missingAltEl = document.getElementById('missingAltVal');
+        missingAltEl.textContent = data.missing_alt_count !== null ? data.missing_alt_count : '0';
+        if (data.missing_alt_count > 0) {
+          missingAltEl.style.color = 'var(--accent-amber)';
+        } else {
+          missingAltEl.style.color = 'var(--text-main)';
+        }
+
+        document.getElementById('wordCountVal').textContent = data.word_count !== null ? data.word_count.toLocaleString() : '0';
+
+        // Title display
+        const titleEl = document.getElementById('titleVal');
+        if (data.title) {
+          titleEl.textContent = data.title;
+          titleEl.classList.remove('empty-state');
+        } else {
+          titleEl.textContent = 'No <title> tag found or empty';
+          titleEl.classList.add('empty-state');
+        }
+
+        // Meta description display
+        const metaDescEl = document.getElementById('metaDescVal');
+        if (data.meta_description) {
+          metaDescEl.textContent = data.meta_description;
+          metaDescEl.classList.remove('empty-state');
+        } else {
+          metaDescEl.textContent = 'No <meta name="description"> tag found or empty';
+          metaDescEl.classList.add('empty-state');
+        }
+
+        // Display results
+        resultsContainer.style.display = 'block';
+
+      } catch (err) {
+        errorMessage.textContent = err.message || 'Unable to audit URL. Please try again.';
+        errorCard.style.display = 'block';
+      } finally {
+        loadingState.style.display = 'none';
+        submitBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
